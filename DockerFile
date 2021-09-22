@@ -1,0 +1,11 @@
+# syntax=docker/dockerfile:1
+
+FROM mcr.microsoft.com/windows/servercore:ltsc2019
+RUN powershell Set-ExecutionPolicy Bypass -Scope Process -Force; [System.Net.ServicePointManager]::SecurityProtocol = [System.Net.ServicePointManager]::SecurityProtocol -bor 3072; iex ((New-Object System.Net.WebClient).DownloadString('https://community.chocolatey.org/install.ps1'))
+RUN powershell choco install git git-lfs --no-progress -y
+RUN powershell choco install android-ndk --version=21.4 --no-progress -y
+RUN powershell choco install android-sdk --version=26.1.1 --no-progress -y
+RUN powershell choco install unity --params="'/InstallationPath:C:\Program Files\Unity\Hub\Editor\2021.1.21f1'" --version=2021.1.21 --no-progress -y --ignore-package-exit-codes=3010
+RUN powershell choco install unity-android --params="'/InstallationPath:C:\Program Files\Unity\Hub\Editor\2021.1.21f1'" --version=2021.1.21 --no-progress -y --ignore-package-exit-codes=3010
+RUN powershell Write-Host "Hello"
+ADD ["OpenJDK", "C:/Program Files/Unity/Hub/Editor/2021.1.21f1/Editor/Data/PlaybackEngines/AndroidPlayer/OpenJDK"]
