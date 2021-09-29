@@ -1,12 +1,20 @@
 # syntax=docker/dockerfile:1
 
-FROM mcr.microsoft.com/windows/servercore:ltsc2019
-RUN powershell Set-ExecutionPolicy Bypass -Scope Process -Force; [System.Net.ServicePointManager]::SecurityProtocol = [System.Net.ServicePointManager]::SecurityProtocol -bor 3072; iex ((New-Object System.Net.WebClient).DownloadString('https://community.chocolatey.org/install.ps1'))
-RUN powershell choco install git git-lfs openjdk --no-progress -y
-RUN powershell choco install unity --params="'/InstallationPath:C:\Program Files\Unity\Hub\Editor\2021.1.21f1'" --version=2021.1.21 --no-progress -y --ignore-package-exit-codes=3010
-RUN powershell choco install unity-android --params="'/InstallationPath:C:\Program Files\Unity\Hub\Editor\2021.1.21f1'" --version=2021.1.21 --no-progress -y --ignore-package-exit-codes=3010
+FROM mcr.microsoft.com/dotnet/framework/sdk:4.8-windowsservercore-ltsc2019
 
-SHELL ["powershell"]
+ARG UnityVersion
+ARG ChocoModule
+ARG UnityInstallPath
+
+SHELL ["powershell", "-command"]
 
 RUN Invoke-WebRequest "https://aka.ms/vs/16/release/vs_community.exe" -OutFile "$env:TEMP\vs_community.exe" -UseBasicParsing
 RUN & "$env:TEMP\vs_community.exe" --add Microsoft.VisualStudio.Workload.ManagedGame --quiet --wait --norestart --noUpdateInstaller | Out-Default
+
+RUN Set-ExecutionPolicy Bypass -Scope Process -Force; [System.Net.ServicePointManager]::SecurityProtocol = [System.Net.ServicePointManager]::SecurityProtocol -bor 3072; iex ((New-Object System.Net.WebClient).DownloadString('https://community.chocolatey.org/install.ps1'))
+RUN choco install git git-lfs openjdk choco-cleaner --no-progress -y
+
+RUN choco install unity --params="$env:UnityInstallPath" --version="$env:UnityVersion" --no-progress -y --ignore-package-exit-codes=3010
+RUN choco install "$env:ChocoModule" --params="$env:UnityInstallPath" --version="$env:UnityVersion" --no-progress -y --ignore-package-exit-codes=3010
+
+RUN choco-cleaner

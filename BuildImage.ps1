@@ -1,14 +1,18 @@
 [CmdletBinding()]
 param(
-  [Parameter(Mandatory=$true)]
+  [Parameter(Mandatory = $true)]
   [String]$UnityVersion,
 
-  [Parameter(Mandatory=$true)]
-  [String]$Module
+  [Parameter(Mandatory = $true)]
+  [String]$Module,
+
+  [Parameter(Mandatory = $true)]
+  [String]$ImageVersion
 )
 
-$ChangeSet = unity-changeset $UnityVersion
+$UnityInstallPath = "'/InstallationPath:C:\Program Files\Unity\Hub\Editor\" + $UnityVersion + "f1'"
 
-Write-Host $ChangeSet
+$ChocoModule = "unity-" + $Module
+$Tag = "huszky/unity_windows_container:" + $UnityVersion + "f1-" + $Module + "-" + $ImageVersion
 
-docker build --tag "unitywindows$UnityVersion" . --build-arg UNITYVERSION=$UnityVersion --build-arg CHANGESET=$ChangeSet --build-arg MODULE=$Module
+docker build --tag $Tag . --build-arg UnityVersion=$UnityVersion --build-arg ChocoModule=$ChocoModule --build-arg UnityInstallPath=$UnityInstallPath
