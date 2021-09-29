@@ -6,13 +6,63 @@ param(
   [Parameter(Mandatory = $true)]
   [String]$Module,
 
-  [Parameter(Mandatory = $true)]
-  [String]$ImageVersion
+  [Boolean]$Cleanup = $true
 )
+
+if (
+  !($Module -eq "android" `
+      -or "ios" `
+      -or "linux" `
+      -or "lumin" `
+      -or "appletv" `
+      -or "webgl" `
+      -or "mac" `
+      -or "linuxil2cpp" `
+      -or "windowsil2cpp" `
+      -or "uwp" `
+      -or "editor")) {
+  throw "Unknown module $Module"
+}
+
+$ImageVersion = "0.3.0"
 
 $UnityInstallPath = "'/InstallationPath:C:\Program Files\Unity\Hub\Editor\" + $UnityVersion + "f1'"
 
-$ChocoModule = "unity-" + $Module
 $Tag = "huszky/unity_windows_container:" + $UnityVersion + "f1-" + $Module + "-" + $ImageVersion
 
-docker build --tag $Tag . --build-arg UnityVersion=$UnityVersion --build-arg ChocoModule=$ChocoModule --build-arg UnityInstallPath=$UnityInstallPath
+if ($Module -like "android") {
+  Write-Host "Unzipping Android tools"
+  Expand-Archive -Path "OpenJDK.zip" -DestinationPath  "OpenJDK"
+  Expand-Archive -Path "NDK.zip" -DestinationPath  "NDK"
+  Expand-Archive -Path "SDK.zip" -DestinationPath  "SDK"
+}
+
+if ($Module -eq "android") {
+
+  $AndroidPlayerPath = "C:/Program Files/Unity/Hub/Editor/" + $UnityVersion + "f1/Editor/Data/PlaybackEngines/AndroidPlayer/"
+
+  $NDKPath = $AndroidPlayerPath + "NDK"
+  $SDKPath = $AndroidPlayerPath + "SDK"
+  $OpenJDKPath = $AndroidPlayerPath + "OpenJDK"
+
+  docker build --target "android" --tag $Tag . `
+    --build-arg UnityVersion=$UnityVersion `
+    --build-arg UnityInstallPath=$UnityInstallPath `
+    --build-arg NDKPath=$NDKPath `
+    --build-arg SDKPath=$SDKPath `
+    --build-arg OpenJDKPath=$OpenJDKPath
+}
+else {
+  docker build --target $Module --tag $Tag . `
+    --build-arg UnityVersion=$UnityVersion `
+    --build-arg UnityInstallPath=$UnityInstallPath
+}
+
+if ($Cleanup) {
+  if ($Module -like "android") {
+    Write-Host "Removing Android tools"
+    Remove-Item "OpenJDK" -Recurse
+    Remove-Item "NDK" -Recurse
+    Remove-Item "SDK" -Recurse
+  }
+}
