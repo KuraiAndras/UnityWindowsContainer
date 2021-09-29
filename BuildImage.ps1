@@ -37,7 +37,13 @@ if ($Module -like "android") {
   Expand-Archive -Path "SDK.zip" -DestinationPath  "SDK"
 }
 
-if ($Module -eq "android") {
+
+if ($Module -eq "editor") {
+  docker build --tag $Tag -f editor.DockerFile . `
+    --build-arg UnityVersion=$UnityVersion `
+    --build-arg UnityInstallPath=$UnityInstallPath
+}
+elseif ($Module -eq "android") {
 
   $AndroidPlayerPath = "C:/Program Files/Unity/Hub/Editor/" + $UnityVersion + "f1/Editor/Data/PlaybackEngines/AndroidPlayer/"
 
@@ -45,24 +51,24 @@ if ($Module -eq "android") {
   $SDKPath = $AndroidPlayerPath + "SDK"
   $OpenJDKPath = $AndroidPlayerPath + "OpenJDK"
 
-  docker build --target "android" --tag $Tag . `
+  docker build --tag $Tag -f android.DockerFile . `
     --build-arg UnityVersion=$UnityVersion `
     --build-arg UnityInstallPath=$UnityInstallPath `
     --build-arg NDKPath=$NDKPath `
     --build-arg SDKPath=$SDKPath `
     --build-arg OpenJDKPath=$OpenJDKPath
-}
-else {
-  docker build --target $Module --tag $Tag . `
-    --build-arg UnityVersion=$UnityVersion `
-    --build-arg UnityInstallPath=$UnityInstallPath
-}
 
-if ($Cleanup) {
-  if ($Module -like "android") {
+  if ($Cleanup) {
     Write-Host "Removing Android tools"
     Remove-Item "OpenJDK" -Recurse
     Remove-Item "NDK" -Recurse
     Remove-Item "SDK" -Recurse
   }
+}
+else {
+  $ChocoModule = "unity-" + $Module
+  docker build --tag $Tag -f regular.DockerFile . `
+    --build-arg UnityVersion=$UnityVersion `
+    --build-arg UnityInstallPath=$UnityInstallPath `
+    --build-arg ChocoModule=$ChocoModule
 }
